@@ -1,8 +1,8 @@
 
-# 1. Création du VPC
-resource "google_compute_network" "vpc" {
-  name                    = "vpc-terraform"
-  auto_create_subnetworks = false
+# 1. Utilisation du module VPC GCP
+module "vpc" {
+  source   = "../modules/gcp"
+  vpc_name = "vpc-terraform"
 }
 
 # 2. Création du sous-réseau
@@ -10,7 +10,7 @@ resource "google_compute_subnetwork" "subnet" {
   name          = "subnet-terraform"
   ip_cidr_range = "10.0.1.0/24"
   region        = "europe-west1"
-  network       = google_compute_network.vpc.id
+  network       = module.vpc.vpc_id
 }
 
 # 3. Création de plusieurs machines virtuelles
@@ -44,7 +44,7 @@ resource "google_sql_database_instance" "db" {
 
     ip_configuration {
       ipv4_enabled    = false
-      private_network = google_compute_network.vpc.id
+      private_network = module.vpc.vpc_id
     }
   }
 
@@ -57,12 +57,12 @@ resource "google_compute_global_address" "private_ip" {
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 16
-  network       = google_compute_network.vpc.id
+  network       = module.vpc.vpc_id
 }
 
 # 6. Création de la connexion réseau privée
 resource "google_service_networking_connection" "private_connection" {
-  network                 = google_compute_network.vpc.id
+  network                 = module.vpc.vpc_id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.private_ip.name]
 }
